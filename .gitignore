@@ -14,3 +14,8 @@
 .glide/
 vendor/
 *.lock
+certs/
+ldap-pass-webui
+*.sh
+tmp/
+.idea/

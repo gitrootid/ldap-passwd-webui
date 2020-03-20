@@ -53,9 +53,44 @@ go get -u github.com/golang/dep/cmd/dep
 ```sh
 make
 ```
+## Add New Feature
+modify below attribute for ldap user:
+"sambaNTPassword" and "sambaLMPassword"
 
+## load self sign CA cert
+code:
+```go
+	rootCA, err := x509.SystemCertPool()
+	if err != nil {
+		log.Printf("Failed to load system cert:%v", err)
+		// return nil, err
+	}
+	if rootCA == nil {
+		rootCA = x509.NewCertPool()
+		fileName := "./certs/ca.crt"
+		ldapCert, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("failed to read file: %s ", fileName))
+		}
+		ok := rootCA.AppendCertsFromPEM(ldapCert)
+		if !ok {
+			log.Fatal(fmt.Sprintf("ca file not added: %s", fileName))
+		}
+	}
+	config := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         "YourServerName",
+		RootCAs:            rootCA,
+	}
+    l, err := ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", "YourServerName", 636), config)
+```
+##  ldap response: "Insufficient Access Rights" while try to modify sambaNTPassword
+modify olc config, or try to change code: bind admin dn and obtain admin privileges
+  
 ## Credits
 
  * [Web UI for changing LDAP password - python](https://github.com/jirutka/ldap-passwd-webui)
  * [Gitea](https://github.com/go-gitea/gitea)
  * [dchest/captcha](https://github.com/dchest/captcha)
+ * [lmhash](https://github.com/newrelic/nri-mssql/blob/master/vendor/github.com/denisenkom/go-mssqldb/ntlm.go)
+ * [nthash](refer:https://cybersecurity.ink/posts/golang-ntlmhash/)
