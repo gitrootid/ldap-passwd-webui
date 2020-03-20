@@ -51,18 +51,6 @@ go mod download
 
 ```sh
 make build 
-docker build -t ldap-passwd-webui .
-docker run \
---name ldap-passwd-webui \
--p 8080:8080 \
--e LPW_PORT='389' \ 
--e LPW_ENCRYPTED=false \ 
--e LPW_START_TLS=false \
--e LPW_SSL_SKIP_VERIFY=true \
--e LPW_USER_DN='uid=%s,ou=Users,dc=domain,dc=com' \
--e LPW_USER_BASE='ou=Users,dc=domain,dc=com' \ 
-ldap-passwd-webui
-
 ```
 ## Add New Feature
 modify below attribute for ldap user:
@@ -104,4 +92,4 @@ modify olc config, or try to change code: bind admin dn and obtain admin privile
  * [Gitea](https://github.com/go-gitea/gitea)
  * [dchest/captcha](https://github.com/dchest/captcha)
  * [lmhash](https://github.com/newrelic/nri-mssql/blob/master/vendor/github.com/denisenkom/go-mssqldb/ntlm.go)
- * [nthash](refer:https://cybersecurity.ink/posts/golang-ntlmhash)
+ * [nthash](https://cybersecurity.ink/posts/golang-ntlmhash)
