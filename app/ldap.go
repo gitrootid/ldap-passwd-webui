@@ -3,10 +3,11 @@ package app
 import (
 	"crypto/md5"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	ldap "github.com/go-ldap/ldap/v3"
+	"github.com/go-ldap/ldap/v3"
 	"ldap-passwd-webui/pkg/util"
 	"log"
 	"strings"
@@ -20,6 +21,10 @@ const (
 	SecurityProtocolUnencrypted SecurityProtocol = iota
 	SecurityProtocolLDAPS
 	SecurityProtocolStartTLS
+)
+
+var (
+	CertPool *x509.CertPool
 )
 
 // LDAPClient Basic LDAP authentication service
@@ -68,36 +73,13 @@ func (ls *LDAPClient) sanitizedUserDN(username string) (string, bool) {
 	return fmt.Sprintf(ls.UserDN, username), true
 }
 
-//func loadROOTCA() (rootCA x509.CertPool,err error) {
-//	rootCA, err = x509.SystemCertPool()
-//	if err != nil{
-//		return
-//	}
-//	if err != nil {
-//		log.Printf("Failed to load system cert:%v", err)
-//		// return nil, err
-//	}
-//	if rootCA == nil {
-//		rootCA = x509.NewCertPool()
-//		fileName := "/home/wu/go/src/ldap-passwd-webui/certs/ca.crt"
-//		ldapCert, err := ioutil.ReadFile(fileName)
-//		if err != nil {
-//			log.Printf(fmt.Sprintf("failed to read file: %s ", fileName))
-//		}
-//		ok := rootCA.AppendCertsFromPEM(ldapCert)
-//		if !ok {
-//			log.Printf(fmt.Sprintf("ca file not added: %s", fileName))
-//		}
-//	}
-//	return
-//}
-
 func dial(ls *LDAPClient) (*ldap.Conn, error) {
 	log.Printf("\nDialing LDAP with security protocol (%v) without verifying: %v", ls.SecurityProtocol, ls.SkipVerify)
 
 	tlsCfg := &tls.Config{
 		ServerName:         ls.Host,
 		InsecureSkipVerify: ls.SkipVerify,
+		RootCAs:            CertPool,
 	}
 	if ls.SecurityProtocol == SecurityProtocolLDAPS {
 		return ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", ls.Host, ls.Port), tlsCfg)
@@ -155,19 +137,19 @@ func (ls *LDAPClient) ModifyPassword(name, oldPassword, newPassword string) erro
 // NewLDAPClient : Creates new LDAPClient capable of binding and changing passwords
 func NewLDAPClient() *LDAPClient {
 	securityProtocol := SecurityProtocolUnencrypted
-	if envBool("LPW_ENCRYPTED", true) {
+	if GetEnvBool("LPW_ENCRYPTED", true) {
 		securityProtocol = SecurityProtocolLDAPS
-		if envBool("LPW_START_TLS", false) {
+		if GetEnvBool("LPW_START_TLS", false) {
 			securityProtocol = SecurityProtocolStartTLS
 		}
 	}
 	return &LDAPClient{
-		Host:             envStr("LPW_HOST", ""),
-		Port:             envInt("LPW_PORT", 636), // 389
+		Host:             GetEnvStr("LPW_HOST", ""),
+		Port:             GetEnvInt("LPW_PORT", 636), // 389
 		SecurityProtocol: securityProtocol,
-		SkipVerify:       envBool("LPW_SSL_SKIP_VERIFY", false),
-		UserDN:           envStr("LPW_USER_DN", "uid=%s,ou=people,dc=example,dc=org"),
-		UserBase:         envStr("LPW_USER_BASE", "ou=people,dc=example,dc=org"),
+		SkipVerify:       GetEnvBool("LPW_SSL_SKIP_VERIFY", false),
+		UserDN:           GetEnvStr("LPW_USER_DN", "uid=%s,ou=people,dc=example,dc=org"),
+		UserBase:         GetEnvStr("LPW_USER_BASE", "ou=people,dc=example,dc=org"),
 	}
 }
 

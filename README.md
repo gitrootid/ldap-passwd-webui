@@ -11,11 +11,12 @@ The configuration is made with environment variables:
 |LPW_TITLE|Change your global password for example.org|Title that will appear on the page|
 |LPW_HOST||LDAP Host to connect to|
 |LPW_PORT|636|LDAP Port (389|636 are default LDAP/LDAPS)|
-|LPW_ENCRYPTED|true|Use enrypted communication|
+|LPW_ENCRYPTED|true|Use encrypted communication|
 |LPW_START_TLS|false|Start TLS communication|
 |LPW_SSL_SKIP_VERIFY|true|Skip TLS CA verification|
 |LPW_USER_DN|uid=%s,ou=people,dc=example,dc=org|Filter expression to search the user for Binding|
 |LPW_USER_BASE|ou=people,dc=example,dc=org|Base to use when doing the binding|
+|CA_FILE|ca.crt|ca certification path for encrypting communication|
 
 ## Running
 
@@ -38,7 +39,7 @@ docker run -d -p 8080:8080 --name ldap-passwd-webui \
     -e LPW_SSL_SKIP_VERIFY="true" \
     -e LPW_USER_DN="uid=%s,ou=people,dc=example,dc=org" \
     -e LPW_USER_BASE="ou=people,dc=example,dc=org" \
-    -e LPW_PATTERN='.{8,}' \
+    -e CA_FILE='/app/ca.cert' \
     -e LPW_PATTERN_INFO="Password must be at least 8 characters long." \
     npenkov/docker-ldap-passwd-webui:latest
 ```
@@ -82,6 +83,24 @@ code:
 		RootCAs:            rootCA,
 	}
     l, err := ldap.DialTLS("tcp", fmt.Sprintf("%s:%d", "YourServerName", 636), config)
+```
+
+## check password strength
+code:
+```go
+import "regexp"
+
+func ChenkPasswordStrength(p string) (level int) {
+	reg := regexp.MustCompile(`^(?:([a-z])|([A-Z])|([0-9])|(\W)){8,25}$`)
+	for _, str := range reg.FindStringSubmatch(p) {
+		if len(str) == 0 {
+			continue
+		}
+		level += 1
+	}
+	return level
+}
+
 ```
 ##  ldap response: "Insufficient Access Rights" while try to modify sambaNTPassword
 modify olc config, or try to change code: bind admin dn and obtain admin privileges

@@ -1,23 +1,27 @@
 package app
 
 import (
+	"fmt"
+	"log"
 	"os"
+	"regexp"
 	"strconv"
 )
 
 func getTitle() string {
-	return envStr("LPW_TITLE", "Change your password on example.org")
+	return GetEnvStr("LPW_TITLE", "Change your password on example.org")
 }
 
-func getPattern() string {
-	return envStr("LPW_PATTERN", ".{10,}")
-}
+//func getPattern() string {
+//	return GetEnvStr("LPW_PATTERN", ".{10,}")
+//}
 
 func getPatternInfo() string {
-	return envStr("LPW_PATTERN_INFO", "Password must be at least 10 characters long.")
+	return GetEnvStr("LPW_PATTERN_INFO",
+		"密码须包含(大写，小写，数字，特殊字符)中的3种字符.Password must contains 3 kinds of symbol among capital, lowercase letter, number, special symbol.")
 }
 
-func envStr(key, defaultValue string) string {
+func GetEnvStr(key, defaultValue string) string {
 	val := os.Getenv(key)
 	if val != "" {
 		return val
@@ -25,7 +29,7 @@ func envStr(key, defaultValue string) string {
 	return defaultValue
 }
 
-func envInt(key string, defaultValue int) int {
+func GetEnvInt(key string, defaultValue int) int {
 	val := os.Getenv(key)
 	if val != "" {
 		i, err := strconv.Atoi(val)
@@ -37,7 +41,7 @@ func envInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-func envBool(key string, defaultValue bool) bool {
+func GetEnvBool(key string, defaultValue bool) bool {
 	val := os.Getenv(key)
 	if val != "" {
 		b, err := strconv.ParseBool(val)
@@ -47,4 +51,32 @@ func envBool(key string, defaultValue bool) bool {
 		return b
 	}
 	return defaultValue
+}
+
+func CheckPasswordStrength(pw string, min int, max int) (level int, msg string) {
+	if len(pw) < min {
+		msg = fmt.Sprintf("password len < %d\n", min)
+		return
+	}
+	if len(pw) > max {
+		msg = fmt.Sprintf("password len > %d\n", max)
+		return
+	}
+	var regStringList = []string{`[0-9]{1}`,
+		`[a-z]{1}`,
+		`[A-Z]{1}`,
+		`\W{1}`,
+	}
+	for _, regStr := range regStringList {
+		b, err := regexp.MatchString(regStr, pw)
+		if err != nil {
+			log.Print(err.Error())
+			continue
+		}
+		if b {
+			level += 1
+		}
+	}
+	msg = getPatternInfo()
+	return
 }
